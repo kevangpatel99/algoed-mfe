@@ -116,7 +116,7 @@ jobs:
         run: npm install
 
       - name: Build Host App
-        run: nx run algoed:build
+        run: npx nx run algoed:build
 
       - name: Deploy Host App to EC2
         uses: appleboy/ssh-action@v0.1.0
