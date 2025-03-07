@@ -1,42 +1,188 @@
-name: CI
+name: CI/CD Pipeline for Microfrontend Portals
 
 on:
   push:
     branches:
-      - master
-  pull_request:
-
-permissions:
-  actions: read
-  contents: read
+      - development
+      - student-development
+      - admin-development
+      - judges-development
+      - organization-development
 
 jobs:
-  main:
+  ci:
+    name: Run Tests & Build Affected Projects
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
         with:
-          fetch-depth: 0
-      
-      
+          node-version: '16'
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      - name: Install Dependencies
+        run: npm install
 
-      
-      # Cache node_modules
-      - uses: actions/setup-node@v4
+      - name: Run Affected Tests
+        run: npx nx affected:test --base=origin/main
+
+      - name: Build Affected Projects
+        run: npx nx affected:build --base=origin/main
+
+  deploy_student:
+    name: Deploy Student Portal
+    needs: ci
+    if: github.ref == 'refs/heads/student-development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
         with:
-          node-version: 20
-          cache: 'npm'
-       
-      - run: npm ci --legacy-peer-deps
-      - uses: nrwl/nx-set-shas@v4
+          node-version: '16'
 
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: npx nx-cloud record -- echo Hello World
-      # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - run: npx nx affected -t lint test build
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Student Portal
+        run: npx nx build student-portal
+
+      - name: Deploy Student Portal to EC2
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_IP_TEST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
+          script: |
+            cd /path/to/deployment/folder
+            rm -rf student-portal
+            mkdir student-portal
+            cp -r $GITHUB_WORKSPACE/dist/student-portal ./student-portal
+            # Optionally, restart services or run additional commands
+
+  deploy_admin:
+    name: Deploy Admin Portal
+    needs: ci
+    if: github.ref == 'refs/heads/admin-development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Admin Portal
+        run: npx nx build admin-portal
+
+      - name: Deploy Admin Portal to EC2
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_IP_TEST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
+          script: |
+            cd /path/to/deployment/folder
+            rm -rf admin-portal
+            mkdir admin-portal
+            cp -r $GITHUB_WORKSPACE/dist/admin-portal ./admin-portal
+
+  deploy_judges:
+    name: Deploy Judges Portal
+    needs: ci
+    if: github.ref == 'refs/heads/judges-development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Judges Portal
+        run: npx nx build judges-portal
+
+      - name: Deploy Judges Portal to EC2
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_IP_TEST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
+          script: |
+            cd /path/to/deployment/folder
+            rm -rf judges-portal
+            mkdir judges-portal
+            cp -r $GITHUB_WORKSPACE/dist/judges-portal ./judges-portal
+
+  deploy_organization:
+    name: Deploy Organization Portal
+    needs: ci
+    if: github.ref == 'refs/heads/organization-development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Organization Portal
+        run: npx nx build organization-portal
+
+      - name: Deploy Organization Portal to EC2
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_IP_TEST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
+          script: |
+            cd /path/to/deployment/folder
+            rm -rf organization-portal
+            mkdir organization-portal
+            cp -r $GITHUB_WORKSPACE/dist/organization-portal ./organization-portal
+
+  deploy_host:
+    name: Deploy Host App (Algoed)
+    needs: ci
+    if: github.ref == 'refs/heads/development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Host App
+        run: npx nx build host-app
+
+      - name: Deploy Host App to EC2
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_IP_TEST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
+          script: |
+            cd /path/to/deployment/folder
+            rm -rf host-app
+            mkdir host-app
+            cp -r $GITHUB_WORKSPACE/dist/host-app ./host-app
+            # Restart or refresh the host service as required
