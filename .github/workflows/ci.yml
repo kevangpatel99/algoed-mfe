@@ -6,8 +6,6 @@ on:
       - development
       - student-development
       - admin-development
-      - judges-development
-      - organization-development
 
 jobs:
   ci:
@@ -51,7 +49,7 @@ jobs:
         run: npm install
 
       - name: Build Student Portal
-        run: npx nx build student-portal
+        run: nx run studentPortal:build
 
       - name: Deploy Student Portal to EC2
         uses: appleboy/ssh-action@v0.1.0
@@ -85,7 +83,7 @@ jobs:
         run: npm install
 
       - name: Build Admin Portal
-        run: npx nx build admin-portal
+        run: nx run adminPortal:build
 
       - name: Deploy Admin Portal to EC2
         uses: appleboy/ssh-action@v0.1.0
@@ -98,72 +96,6 @@ jobs:
             rm -rf admin-portal
             mkdir admin-portal
             cp -r $GITHUB_WORKSPACE/dist/admin-portal ./admin-portal
-
-  deploy_judges:
-    name: Deploy Judges Portal
-    needs: ci
-    if: github.ref == 'refs/heads/judges-development'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Build Judges Portal
-        run: npx nx build judges-portal
-
-      - name: Deploy Judges Portal to EC2
-        uses: appleboy/ssh-action@v0.1.0
-        with:
-          host: ${{ secrets.EC2_IP_TEST }}
-          username: ec2-user
-          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
-          script: |
-            cd /path/to/deployment/folder
-            rm -rf judges-portal
-            mkdir judges-portal
-            cp -r $GITHUB_WORKSPACE/dist/judges-portal ./judges-portal
-
-  deploy_organization:
-    name: Deploy Organization Portal
-    needs: ci
-    if: github.ref == 'refs/heads/organization-development'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Build Organization Portal
-        run: npx nx build organization-portal
-
-      - name: Deploy Organization Portal to EC2
-        uses: appleboy/ssh-action@v0.1.0
-        with:
-          host: ${{ secrets.EC2_IP_TEST }}
-          username: ec2-user
-          key: ${{ secrets.SSH_PRIVATE_KEY_TOTAL }}
-          script: |
-            cd /path/to/deployment/folder
-            rm -rf organization-portal
-            mkdir organization-portal
-            cp -r $GITHUB_WORKSPACE/dist/organization-portal ./organization-portal
 
   deploy_host:
     name: Deploy Host App (Algoed)
@@ -184,7 +116,7 @@ jobs:
         run: npm install
 
       - name: Build Host App
-        run: npx nx build host-app
+        run: nx run algoed:build
 
       - name: Deploy Host App to EC2
         uses: appleboy/ssh-action@v0.1.0
